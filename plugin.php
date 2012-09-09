@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: wp-publications
-Description: Integrates bibtexbrowser into wordpress
+Description: Creates publication lists from Bibtex files by integrating bibtexbrowser into wordpress
 Plugin URI: http://www.monperrus.net/martin/wp-publications
 Author: Martin Monperrus
 Author URI: http://www.monperrus.net/martin/
@@ -38,6 +38,7 @@ class WP_BibtexBrowser {
     add_action( 'init', array( &$this, 'register_css' ) );
     add_shortcode( __WP_PLUGIN__, array( &$this, 'wp_publications_shortcode_handler') );        
     add_action('the_post', array( &$this, 'update_bibtex' ));
+    register_activation_hook( __FILE__,  array( &$this, 'activation_action'));
   }
 
   // loads bibtexbrowser using appropriate context variables
@@ -46,6 +47,8 @@ class WP_BibtexBrowser {
     define('PAGE_SIZE',10000);
     define('BIBTEXBROWSER_URL_BUILDER','wp_bibtexbrowser_url_builder');
     
+    is_readable(dirname(__FILE__).'/'.'bibtexbrowser.php') or die('bibtexbrowser.php is not readable');
+
     file_exists(dirname(__FILE__).'/'.'bibtexbrowser.php') or die('the plugin wp-publications requires bibtexbrowser.<br/> Please download it at http://www.monperrus.net/martin/bibtexbrowser.php.txt and copy it into wp-content/plugins/wp-publications. Thanks :)');
     require(dirname(__FILE__).'/'.'bibtexbrowser.php');
   }
@@ -64,7 +67,6 @@ class WP_BibtexBrowser {
    */
   function update_bibtex(&$post) {
   
-    
     if ($post->post_type == __WP_PLUGIN__) {
     
       // get the bibtex file associated with the post
@@ -72,9 +74,7 @@ class WP_BibtexBrowser {
 
       // updating the post
       // we need one refresh to get this into account
-      $_GET['bib'] = $this->resolve($bibtex);
-      setDB();
-      $database = $_GET[Q_DB]; 
+      $database = zetDB($this->resolve($bibtex));
       // slugs are case-insensitives
       $bibdb = $database->bibdb;
       $entry = NULL;
@@ -122,6 +122,22 @@ class WP_BibtexBrowser {
     flush_rewrite_rules();        
   }
 
+  /** adds a test post for wp-publications and create a sample bibtex file*/
+  function activation_action() {  
+      // add a sample.bib
+      //@file_put_contents(plugin_dir_path(__FILE__).'/sample.bib', 
+      //   "@article{doe2000,title={An article},author={Jane Doe},journal={The Wordpress Journal},year=2000}\n".
+      //   "@book{doo2001,title={An bok},author={Jane Doe},year=2001}");
+      
+      //add_fake_post
+      $post = array(
+        'post_content' => "&#91;wp-publications bib=sample.bib all=1&#93; gives:\n[wp-publications bib=sample.bib all=1]", //The full text of the post.
+        'post_status' => 'publish',
+        'post_title' => 'wp-publications example', //The title of your post.
+    );  
+    $post_id = wp_insert_post( $post );    
+  }
+  
   /** adds a new publication entry if $ID=NULL based on the BibtexEntry $entry 
    * from the bibtex file $bibtex_file
    * updates it otherwise
@@ -147,34 +163,41 @@ class WP_BibtexBrowser {
 
   /** returns a valid path of the $bibtex */
   function resolve($bibtex) {
+    $resolvedbibtexfiles = array();
+    
+    foreach (explode(';',$bibtex) as $bibtexfile) {
+      array_push($resolvedbibtexfiles,$this->resolveOneBibTexFile($bibtexfile));
+    }
+    
+    return implode(';',$resolvedbibtexfiles);
+  }
+  
+  function resolveOneBibTexFile($bibtex) {
     // in the plugin directory wp-content/plugins/wp-publications
     $file = dirname(__FILE__).'/'.$bibtex;
     if (is_file($file)) {
       return $file;      
     }
-    
+
     // in the wordpress directory
     $file = dirname($_SERVER['SCRIPT_FILENAME']).'/'.$bibtex;
     if (is_file($file)) {
-      return $file;      
+        return $file;      
     }
+
     return $bibtex;
   }
+
 
   /** returns the string associated with a publication list shortcode
    * e.g. [wp-publications bib="publications.bib" all=true]
    */
   function wp_publications_shortcode_handler( $atts, $content=null, $code="" ) {
-    
     // first we simulate a standard call to bibtexbrowser
-    $_GET = array_merge($atts, $_GET);
+    $_GET = array_merge($_GET, $atts);
     
     $_GET['bib'] = $this->resolve($_GET['bib']);
-
-        
-    setDB();          
-    
-    $database = $_GET[Q_DB]; 
+    $database = zetDB($this->resolve($_GET['bib']));
     
     foreach($database->getEntries() as $entry) {
       $bibdisplay = new BibEntryDisplay($entry);
@@ -192,7 +215,6 @@ class WP_BibtexBrowser {
         $this->add_or_update_publication_entry($entry,$atts['bib']);
       }
     }
-    
     ob_start();
     new Dispatcher();
     return ob_get_clean();   
