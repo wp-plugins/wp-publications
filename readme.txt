@@ -1,7 +1,8 @@
 === wp-publications ===
 Contributors: monperrus
 Tags: publications, research, academia
-Stable Tag: 1.0
+Stable tag: trunk
+Tested up to: trunk
 
 == Description ==
 wp-publications enables research groups and individuals to add publication lists in Wordpress. The publication lists are generated on the fly from bibtex files using [bibtexbrowser](http://www.monperrus.net/martin/bibtexbrowser). 
