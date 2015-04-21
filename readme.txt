@@ -1,6 +1,6 @@
 === wp-publications ===
 Contributors: monperrus
-Tags: publications, research, academia
+Tags: publications, research, academia, wp-publications, bibtexbrowser
 Stable tag: trunk
 Tested up to: trunk
 
@@ -9,14 +9,13 @@ wp-publications enables research groups and individuals to add publication lists
 
 One just has to create a post/page containing a short code such as:
 
-+ [wp-publications bib="mybibliography.bib" all=true] 
-+ [wp-publications bib="mybibliography.bib" year=2011] 
-+ [wp-publications bib="mybibliography.bib" author="Martin Monperrus"] 
++ [wp-publications bib="sample.bib" all=true] 
++ [wp-publications bib="sample.bib" year=2001] 
++ [wp-publications bib="sample.bib" author="Doe"] 
 
 One can also mix options:
 
-+ [wp-publications bib="mybibliography.bib" all=true academic=true] 
-+ [wp-publications bib="mybibliography.bib" year=2011 author="Martin Monperrus" academic=true] 
++ [wp-publications bib="sample.bib" year=2001 author="Bar"] 
 
 Notes:
 
@@ -33,4 +32,4 @@ Notes:
 == Credits ==
 
 Sjoerd OP 'T LAND
-
+Ayesh Alshukri
